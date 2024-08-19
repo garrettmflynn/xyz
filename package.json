@@ -1,0 +1,12 @@
+{
+    "name": "garrettflynn-xyz",
+    "scripts": {
+        "start": "npm run dev",
+        "dev": "vite",
+        "build": "vite build",
+        "serve": "vite preview"
+    },
+    "devDependencies": {
+        "vite": "^5.4.1"
+    }
+}
