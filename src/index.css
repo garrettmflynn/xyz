@@ -1,14 +1,62 @@
-
 html, body {
     margin: 0;
     padding: 0;
     font-family: 'Roboto', sans-serif;
     height: 100vh;
     width: 100vw;
+    background: var(--background);
+    --background: ghostwhite;
+    --color: black;
 }
 
 body {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr min-content;
+}
+
+body[data-theme="dark"] {
+    --background: black;
+    --color: ghostwhite;
+}
+
+main {
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+canvas {
+    border: 1px solid var(--color);
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+
+    width: calc(0.5 * min(100vw, 100vh));
+    height: calc(0.5 * min(100vw, 100vh));
+
+    cursor: none;
+}
+
+body[data-theme="dark"] canvas {
+    box-shadow: 0 0 10px 0 var(--color)
+}
+
+#space {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    padding: 1rem;
+    background: var(--color);
+    color: var(--background);
+    font-size: 1.5rem;
+    font-weight: bold;
 }
