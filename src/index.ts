@@ -3,7 +3,7 @@ if (localStorage.getItem('theme') === null) localStorage.setItem('theme', THEMES
 
 type ObjectType = {
     draw: (ctx: CanvasRenderingContext2D) => void
-} & ({} | { onClick: () => void, isIntersecting: (x: number, y: number, size: number) => boolean })
+} & ({} | { onClick: () => void, isIntersecting: (x: number, y: number, canvas: HTMLCanvasElement) => boolean })
 
 const STATES = {
     canvasRotation: 0,
@@ -32,28 +32,23 @@ const CIRCLE = {
     },
 
 
-    getX (time: number, size: number) {
-        return size / 2
+    getX (time: number, width: number) {
+        return width / 2
     },
 
-    getY(time: number, size: number) {
+    getY(time: number, height: number) {
         const period = 2000;
-        // const amplitude = 0.01 * size;
-        const amplitude = 0.05 * size;
-        return size / 2 + amplitude * Math.sin(2 * Math.PI * time / period)
+        const amplitude = 0.05 * height;
+        return height / 2 + amplitude * Math.sin(2 * Math.PI * time / period)
     },
 
-    getPosition (time: number, size: number) {
-        return {
-            x: this.getX(time, size),
-            y: this.getY(time, size)
-        }
-    },
-
-    isIntersecting(x: number, y: number, size: number) {
+    isIntersecting(x: number, y: number, canvas: HTMLCanvasElement) {
         const time = performance.now();
-        const {x: cx, y: cy } = this.getPosition(time, size);
-        const radius = this.radius * size;
+
+        const { width, height } = canvas.getBoundingClientRect();
+        const cx = this.getX(time, width);
+        const cy = this.getY(time, height);
+        const radius = this.radius * width;
         const distance = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
         return distance < radius;
     },
@@ -61,11 +56,12 @@ const CIRCLE = {
     onClick: () => toggleTheme(),
 
     draw (ctx: CanvasRenderingContext2D) {
-        const size = ctx.canvas.width;
-        const radius = this.radius * size;
+        const { width, height } = ctx.canvas;
+        const radius = this.radius * width;
         const theme = getCurrentTheme();
         const time = performance.now();
-        const { x, y } = this.getPosition(time, size);
+        const x = this.getX(time, width);
+        const y = this.getY(time, height);
         ctx.beginPath();
         ctx.arc(x, y, radius, 0, 2 * Math.PI);
         ctx.fillStyle = this.color[theme];
@@ -88,25 +84,27 @@ const RETICULE = {
 
         if (this.x === 0 && this.y === 0) return;
 
-        const size = ctx.canvas.width;
+        const { width } = ctx.canvas;
+
+        const radiusScale = width
 
         const theme = getCurrentTheme();
 
         if (theme === 'dark') {
             ctx.beginPath()
-            ctx.arc(this.x, this.y, this.radius * size, 0, 2 * Math.PI)
+            ctx.arc(this.x, this.y, this.radius * radiusScale, 0, 2 * Math.PI)
             ctx.fillStyle = this.color[theme]
             ctx.fill()
             ctx.closePath()
         }
 
         else {
-            const x = this.x - this.radius * size;
-            const y = this.y - this.radius * size;
-            const width = this.radius * size * 2;
-            const height = this.radius * size * 2;
+            const x = this.x - this.radius * radiusScale;
+            const y = this.y - this.radius * radiusScale;
+            const w = this.radius * radiusScale * 2;
+            const h = this.radius * radiusScale * 2;
             ctx.fillStyle = this.color[theme];
-            ctx.fillRect(x, y, width, height);
+            ctx.fillRect(x, y, w, h);
         }
     }
 }
@@ -123,10 +121,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check intersections on click
     canvas.onclick = (ev) => {
         const { offsetX, offsetY } = ev as MouseEvent;
-        const size = canvas.getBoundingClientRect().width;
         STATES.objects.forEach(obj => {
             if ('onClick' in obj && 'isIntersecting' in obj) {
-                if (obj.isIntersecting(offsetX, offsetY, size)) obj.onClick();
+                if (obj.isIntersecting(offsetX, offsetY, canvas)) obj.onClick();
             }
         })
     }
@@ -136,13 +133,16 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.onmousemove = (ev) => {
         const { offsetX, offsetY } = ev as MouseEvent;
         const domCoords = { x: offsetX, y: offsetY };
-        const dims = canvas.getBoundingClientRect();
-        const canvasCoords = { x: domCoords.x * (canvas.width / dims.width), y: domCoords.y * (canvas.height / dims.height) };
+        const { width, height } = canvas.getBoundingClientRect();
+        const canvasCoords = { x: domCoords.x * (canvas.width / width), y: domCoords.y * (canvas.height / height) };
         Object.assign(RETICULE, canvasCoords);
     }
 
 
-    const resizeCanvas = () => canvas.width = canvas.height = 2 * Math.min(window.innerWidth, window.innerHeight);
+    const resizeCanvas = () => {
+        canvas.height = 2 * Math.min(window.innerWidth, window.innerHeight)
+        canvas.width = 1.5 * canvas.height
+    };
 
     const draw = () => {
 
